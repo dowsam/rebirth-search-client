@@ -7,7 +7,6 @@ package cn.com.rebirth.search.client;
 import java.util.ArrayList;
 import java.util.List;
 
-import cn.com.rebirth.commons.search.SearchPageRequest;
 import cn.com.rebirth.search.client.group.LuceneGroupField;
 
 /**
@@ -15,7 +14,7 @@ import cn.com.rebirth.search.client.group.LuceneGroupField;
  *
  * @author l.xue.nong
  */
-public class FacetPageRequest extends SearchPageRequest {
+public class FacetPageRequest extends HighlightSearchPageRequest {
 
 	/** The Constant serialVersionUID. */
 	private static final long serialVersionUID = -7875451968438179611L;

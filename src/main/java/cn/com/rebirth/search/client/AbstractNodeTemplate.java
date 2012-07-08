@@ -68,6 +68,7 @@ import cn.com.rebirth.search.core.search.facet.FacetBuilders;
 import cn.com.rebirth.search.core.search.facet.Facets;
 import cn.com.rebirth.search.core.search.facet.terms.TermsFacet;
 import cn.com.rebirth.search.core.search.facet.terms.TermsFacet.Entry;
+import cn.com.rebirth.search.core.search.highlight.HighlightBuilder;
 import cn.com.rebirth.search.core.search.sort.SortBuilders;
 import cn.com.rebirth.search.core.search.sort.SortOrder;
 
@@ -525,6 +526,20 @@ public abstract class AbstractNodeTemplate implements NodeOperations, BaseNodeOp
 					sourceBuilder.explain(pageRequest.isSearchDebug());
 				}
 				//higth
+				if (pageRequest instanceof HighlightSearchPageRequest) {
+					HighlightSearchPageRequest highlightSearchPageRequest = (HighlightSearchPageRequest) pageRequest;
+					HighlightBuilder highlightBuilder = new HighlightBuilder();
+					highlightBuilder.postTags(highlightSearchPageRequest.getPostTag());
+					highlightBuilder.preTags(highlightSearchPageRequest.getPreTag());
+					List<HighlightSearchPageRequest.HighligthSearchField> fields = highlightSearchPageRequest
+							.getHighligthSearchFields();
+					if (fields != null && !fields.isEmpty()) {
+						for (HighlightSearchPageRequest.HighligthSearchField field : fields) {
+							highlightBuilder.field(field.getName(), field.getFragmentSize());
+						}
+					}
+					sourceBuilder.highlight(highlightBuilder);
+				}
 				request.source(sourceBuilder);
 				return client.search(request);
 			}
