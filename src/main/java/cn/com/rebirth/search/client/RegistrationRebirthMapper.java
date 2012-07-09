@@ -31,11 +31,11 @@ import cn.com.rebirth.search.core.node.Node;
 public class RegistrationRebirthMapper implements InitializingBean {
 
 	/** The client. */
-	@Autowired
+	@Autowired(required = false)
 	private Client client;
 
 	/** The node. */
-	@Autowired
+	@Autowired(required = false)
 	private Node node;
 
 	/** The force. */
@@ -82,17 +82,19 @@ public class RegistrationRebirthMapper implements InitializingBean {
 	 */
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		org.apache.commons.lang3.Validate.notNull(client);
-		org.apache.commons.lang3.Validate.notNull(node);
-		ClientNodeTemplate clientNodeTemplate = ClientNodeTemplate.getInstance();
-		if (clientNodeTemplate == null) {
-			clientNodeTemplate = new ClientNodeTemplate(client);
-			clientNodeTemplate.afterPropertiesSet();
-		}
-		NodeTemplate nodeTemplate = NodeTemplate.getInstance();
-		if (nodeTemplate == null) {
-			nodeTemplate = new NodeTemplate(node);
-			nodeTemplate.afterPropertiesSet();
+		String connectType = getImplAchieve();
+		if ("client".equalsIgnoreCase(connectType)) {
+			ClientNodeTemplate clientNodeTemplate = ClientNodeTemplate.getInstance();
+			if (clientNodeTemplate == null) {
+				clientNodeTemplate = new ClientNodeTemplate(client);
+				clientNodeTemplate.afterPropertiesSet();
+			}
+		} else {
+			NodeTemplate nodeTemplate = NodeTemplate.getInstance();
+			if (nodeTemplate == null) {
+				nodeTemplate = new NodeTemplate(node);
+				nodeTemplate.afterPropertiesSet();
+			}
 		}
 		AnnotationManager annotationManager = AnnotationManager.getInstance();
 		ResolverUtils<Index> resolverUtils = new ResolverUtils<Index>();
@@ -117,10 +119,10 @@ public class RegistrationRebirthMapper implements InitializingBean {
 	protected AbstractNodeTemplate bulidTemplate() {
 		if (this.template != null)
 			return this.template;
-		if ("node".equals(getImplAchieve())) {
-			this.template = NodeTemplate.getInstance();
-		} else {
+		if ("client".equals(getImplAchieve())) {
 			this.template = ClientNodeTemplate.getInstance();
+		} else {
+			this.template = NodeTemplate.getInstance();
 		}
 		return this.template;
 	}
@@ -132,7 +134,7 @@ public class RegistrationRebirthMapper implements InitializingBean {
 	 */
 	public boolean isForce() {
 		if (this.force == null) {
-			this.force = Boolean.parseBoolean(System.getProperty("summall.index.mapper.force", "false"));
+			this.force = Boolean.parseBoolean(System.getProperty("rebirth.index.mapper.force", "false"));
 		}
 		return force;
 	}

@@ -5,11 +5,10 @@
 	<parent>
 		<groupId>cn.com.rebirth</groupId>
 		<artifactId>rebirth-parent</artifactId>
-		<version>0.0.1.RC1-SNAPSHOT</version>
+		<version>0.0.1.RELEASE</version>
 	</parent>
 	<artifactId>rebirth-search-client</artifactId>
 	<packaging>jar</packaging>
-	<version>0.0.1.RC1-SNAPSHOT</version>
 	<name>Rebirth :: Module :: rebirth-search-client</name>
 
 	<dependencies>

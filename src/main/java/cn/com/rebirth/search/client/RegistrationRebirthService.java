@@ -68,37 +68,42 @@ public class RegistrationRebirthService implements BeanFactoryPostProcessor {
 	public void postProcessBeanFactory(final ConfigurableListableBeanFactory beanFactory) throws BeansException {
 		if (beanFactory instanceof BeanDefinitionRegistry) {
 			BeanDefinitionRegistry beanDefinitionRegistry = (BeanDefinitionRegistry) beanFactory;
-			RebirthTransportClientFactoryBean transportClientFactoryBean = null;
-			try {
-				transportClientFactoryBean = beanFactory.getBean(RebirthTransportClientFactoryBean.class);
-			} catch (NoSuchBeanDefinitionException e) {
-			}
-			if (transportClientFactoryBean == null) {
-				if (isZkJarLib()) {
-					resgistration(beanDefinitionRegistry, clientBeanName, new ZkClientBeanDefinitonCallbak(this,
-							beanFactory));
-				} else {
-					resgistration(beanDefinitionRegistry, clientBeanName, new NoNodeZkClientBeanDefinitonCallbak(this));
+			String connectType = RegistrationRebirthMapper.getInstance().getImplAchieve();
+			if ("client".equals(connectType)) {
+				RebirthTransportClientFactoryBean transportClientFactoryBean = null;
+				try {
+					transportClientFactoryBean = beanFactory.getBean(RebirthTransportClientFactoryBean.class);
+				} catch (NoSuchBeanDefinitionException e) {
 				}
-
-			}
-			//node config
-			RebirthNodeFactoryBean rebirthNodeFactoryBean = null;
-			try {
-				rebirthNodeFactoryBean = beanFactory.getBean(RebirthNodeFactoryBean.class);
-			} catch (NoSuchBeanDefinitionException e) {
-			}
-			if (rebirthNodeFactoryBean == null) {
-				resgistration(beanDefinitionRegistry, nodeBeanName, new BeanDefinitonCallbak() {
-
-					@Override
-					public BeanDefinition execute(String beanName) {
-						RegistrationRebirthService.this.nodeBeanName = beanName;
-						Resource resource = new ClassPathResource("/rebirth-search-client.properties");
-						return BeanDefinitionBuilder.rootBeanDefinition(RebirthNodeFactoryBean.class)
-								.addPropertyValue("configLocation", resource).getBeanDefinition();
+				if (transportClientFactoryBean == null) {
+					if (isZkJarLib()) {
+						resgistration(beanDefinitionRegistry, clientBeanName, new ZkClientBeanDefinitonCallbak(this,
+								beanFactory));
+					} else {
+						resgistration(beanDefinitionRegistry, clientBeanName, new NoNodeZkClientBeanDefinitonCallbak(
+								this));
 					}
-				});
+
+				}
+			} else {
+				//node config
+				RebirthNodeFactoryBean rebirthNodeFactoryBean = null;
+				try {
+					rebirthNodeFactoryBean = beanFactory.getBean(RebirthNodeFactoryBean.class);
+				} catch (NoSuchBeanDefinitionException e) {
+				}
+				if (rebirthNodeFactoryBean == null) {
+					resgistration(beanDefinitionRegistry, nodeBeanName, new BeanDefinitonCallbak() {
+
+						@Override
+						public BeanDefinition execute(String beanName) {
+							RegistrationRebirthService.this.nodeBeanName = beanName;
+							Resource resource = new ClassPathResource("/rebirth-search-client.properties");
+							return BeanDefinitionBuilder.rootBeanDefinition(RebirthNodeFactoryBean.class)
+									.addPropertyValue("configLocation", resource).getBeanDefinition();
+						}
+					});
+				}
 			}
 		} else {
 			throw new IllegalArgumentException("Error [" + beanFactory + "] not be Instanceof BeanDefinitionRegistry");
