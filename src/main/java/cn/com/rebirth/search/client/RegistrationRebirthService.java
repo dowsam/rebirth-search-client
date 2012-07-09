@@ -4,11 +4,8 @@
  */
 package cn.com.rebirth.search.client;
 
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.I0Itec.zkclient.IZkChildListener;
-import org.I0Itec.zkclient.IZkDataListener;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,13 +21,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import cn.com.rebirth.commons.RebirthContainer;
-import cn.com.rebirth.commons.search.SearchConstants;
-import cn.com.rebirth.commons.search.config.support.ZooKeeperExpand;
-import cn.com.rebirth.search.commons.transport.TransportAddress;
-import cn.com.rebirth.search.core.client.transport.TransportClient;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 /**
  * The Class RegistrationSumMallService.
@@ -52,8 +42,7 @@ public class RegistrationRebirthService implements BeanFactoryPostProcessor {
 	/** The atomic integer. */
 	protected java.util.concurrent.atomic.AtomicInteger atomicInteger = new AtomicInteger(0);
 
-	/** The expand. */
-	protected ZooKeeperExpand expand;
+	protected boolean zkJarLib = true;
 
 	/**
 	 * Instantiates a new registration sum mall service.
@@ -61,7 +50,15 @@ public class RegistrationRebirthService implements BeanFactoryPostProcessor {
 	public RegistrationRebirthService() {
 		super();
 		RebirthContainer.getInstance().start();
-		this.expand = ZooKeeperExpand.getInstance();
+		try {
+			Class.forName("org.apache.zookeeper.ZooKeeper", false, Thread.currentThread().getContextClassLoader());
+		} catch (Exception e) {
+			zkJarLib = false;
+		}
+	}
+
+	public boolean isZkJarLib() {
+		return zkJarLib;
 	}
 
 	/* (non-Javadoc)
@@ -77,59 +74,8 @@ public class RegistrationRebirthService implements BeanFactoryPostProcessor {
 			} catch (NoSuchBeanDefinitionException e) {
 			}
 			if (transportClientFactoryBean == null) {
-				resgistration(beanDefinitionRegistry, clientBeanName, new BeanDefinitonCallbak() {
-					@Override
-					public BeanDefinition execute(String beanName) {
-						RegistrationRebirthService.this.clientBeanName = beanName;
-						return BeanDefinitionBuilder.rootBeanDefinition(RebirthTransportClientFactoryBean.class)
-								.addPropertyValue("addresses", getTransportAddresses()).getBeanDefinition();
-					}
-
-					private List<TransportAddress> getTransportAddresses() {
-						List<TransportAddress> addresses = Lists.newArrayList();
-						List<String> childNode = RegistrationRebirthService.this.expand.list(SearchConstants
-								.getRebirthSearchBulidZKConfig());
-						if (childNode != null) {
-							regirtListener(childNode, addresses);
-						}
-						RegistrationRebirthService.this.expand.getZkClient().subscribeChildChanges(
-								SearchConstants.getRebirthSearchBulidZKConfig(), new IZkChildListener() {
-
-									@Override
-									public void handleChildChange(String parentPath, List<String> currentChilds)
-											throws Exception {
-										List<TransportAddress> addresses = Lists.newArrayList();
-										regirtListener(currentChilds, addresses);
-										if (!addresses.isEmpty()) {
-											TransportClient transportClient = beanFactory
-													.getBean(TransportClient.class);
-											ImmutableList<TransportAddress> immutableList = transportClient
-													.transportAddresses();
-											for (TransportAddress transportAddress : addresses) {
-												if (!immutableList.contains(transportAddress))
-													transportClient.addTransportAddress(transportAddress);
-											}
-										}
-									}
-								});
-						return addresses;
-					}
-
-					private void regirtListener(List<String> childNode, List<TransportAddress> addresses) {
-						for (String node : childNode) {
-							Object object = RegistrationRebirthService.this.expand.get(SearchConstants
-									.getRebirthSearchBulidZKConfig() + "/" + node);
-							if (object instanceof TransportAddress) {
-								final TransportAddress address = (TransportAddress) object;
-								if (addresses != null)
-									addresses.add(address);
-								RegistrationRebirthService.this.expand.getZkClient().subscribeDataChanges(
-										SearchConstants.getRebirthSearchBulidZKConfig() + "/" + node,
-										new NodeDataListener(beanFactory, address));
-							}
-						}
-					}
-				});
+				resgistration(beanDefinitionRegistry, clientBeanName, new ZkClientBeanDefinitonCallbak(this,
+						beanFactory));
 			}
 			//node config
 			RebirthNodeFactoryBean rebirthNodeFactoryBean = null;
@@ -155,79 +101,6 @@ public class RegistrationRebirthService implements BeanFactoryPostProcessor {
 	}
 
 	/**
-	 * The listener interface for receiving nodeData events.
-	 * The class that is interested in processing a nodeData
-	 * event implements this interface, and the object created
-	 * with that class is registered with a component using the
-	 * component's <code>addNodeDataListener<code> method. When
-	 * the nodeData event occurs, that object's appropriate
-	 * method is invoked.
-	 *
-	 * @see NodeDataEvent
-	 */
-	class NodeDataListener implements IZkDataListener {
-
-		/** The transport client. */
-		private TransportClient transportClient;
-
-		/** The current transport address. */
-		private TransportAddress currentTransportAddress;
-
-		/** The bean factory. */
-		private final ConfigurableListableBeanFactory beanFactory;
-
-		/**
-		 * Gets the transport client.
-		 *
-		 * @return the transport client
-		 */
-		public TransportClient getTransportClient() {
-			if (transportClient != null)
-				return transportClient;
-			try {
-				transportClient = beanFactory.getBean(TransportClient.class);
-			} catch (NoSuchBeanDefinitionException e) {
-			}
-			if (transportClient == null)
-				transportClient = new TransportClient();
-			return transportClient;
-		}
-
-		/**
-		 * Instantiates a new node data listener.
-		 *
-		 * @param beanFactory the bean factory
-		 * @param address the address
-		 */
-		public NodeDataListener(final ConfigurableListableBeanFactory beanFactory, TransportAddress address) {
-			super();
-			this.beanFactory = beanFactory;
-			this.currentTransportAddress = address;
-		}
-
-		/* (non-Javadoc)
-		 * @see org.I0Itec.zkclient.IZkDataListener#handleDataChange(java.lang.String, java.lang.Object)
-		 */
-		@Override
-		public void handleDataChange(String dataPath, Object data) throws Exception {
-			getTransportClient().removeTransportAddress(currentTransportAddress);
-			if (data instanceof TransportAddress) {
-				currentTransportAddress = (TransportAddress) data;
-				getTransportClient().addTransportAddress(currentTransportAddress);
-			}
-		}
-
-		/* (non-Javadoc)
-		 * @see org.I0Itec.zkclient.IZkDataListener#handleDataDeleted(java.lang.String)
-		 */
-		@Override
-		public void handleDataDeleted(String dataPath) throws Exception {
-			getTransportClient().removeTransportAddress(currentTransportAddress);
-		}
-
-	}
-
-	/**
 	 * Resgistration.
 	 *
 	 * @param beanDefinitionRegistry the bean definition registry
@@ -249,7 +122,7 @@ public class RegistrationRebirthService implements BeanFactoryPostProcessor {
 	 *
 	 * @author l.xue.nong
 	 */
-	private interface BeanDefinitonCallbak {
+	public static interface BeanDefinitonCallbak {
 
 		/**
 		 * Execute.
