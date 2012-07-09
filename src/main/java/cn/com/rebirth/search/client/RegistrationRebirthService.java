@@ -78,8 +78,7 @@ public class RegistrationRebirthService implements BeanFactoryPostProcessor {
 					resgistration(beanDefinitionRegistry, clientBeanName, new ZkClientBeanDefinitonCallbak(this,
 							beanFactory));
 				} else {
-					resgistration(beanDefinitionRegistry, clientBeanName, new NoNodeZkClientBeanDefinitonCallbak(this,
-							beanFactory));
+					resgistration(beanDefinitionRegistry, clientBeanName, new NoNodeZkClientBeanDefinitonCallbak(this));
 				}
 
 			}
