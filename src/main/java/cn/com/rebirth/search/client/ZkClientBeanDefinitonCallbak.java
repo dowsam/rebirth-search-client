@@ -63,7 +63,7 @@ public class ZkClientBeanDefinitonCallbak implements BeanDefinitonCallbak {
 	 *
 	 * @return the transport addresses
 	 */
-	private List<TransportAddress> getTransportAddresses() {
+	protected List<TransportAddress> getTransportAddresses() {
 		List<TransportAddress> addresses = Lists.newArrayList();
 		if (!registrationRebirthService.isZkJarLib()) {
 			return addresses;

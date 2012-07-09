@@ -74,8 +74,9 @@ public class RegistrationRebirthService implements BeanFactoryPostProcessor {
 			} catch (NoSuchBeanDefinitionException e) {
 			}
 			if (transportClientFactoryBean == null) {
-				resgistration(beanDefinitionRegistry, clientBeanName, new ZkClientBeanDefinitonCallbak(this,
-						beanFactory));
+				resgistration(beanDefinitionRegistry, clientBeanName, isZkJarLib() ? (new ZkClientBeanDefinitonCallbak(
+						this, beanFactory)) : (new NoNodeZkClientBeanDefinitonCallbak(this, beanFactory)));
+
 			}
 			//node config
 			RebirthNodeFactoryBean rebirthNodeFactoryBean = null;
