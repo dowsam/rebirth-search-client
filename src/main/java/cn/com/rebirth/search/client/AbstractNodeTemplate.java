@@ -4,9 +4,13 @@
  */
 package cn.com.rebirth.search.client;
 
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+
+import net.sf.cglib.proxy.MethodInterceptor;
+import net.sf.cglib.proxy.MethodProxy;
 
 import org.apache.commons.lang3.Validate;
 import org.apache.lucene.search.Similarity;
@@ -19,6 +23,7 @@ import cn.com.rebirth.commons.search.SearchPageRequest;
 import cn.com.rebirth.commons.search.annotation.AnnotationInfo;
 import cn.com.rebirth.commons.search.annotation.AnnotationManager;
 import cn.com.rebirth.commons.search.annotation.Index;
+import cn.com.rebirth.commons.utils.CglibProxyUtils;
 import cn.com.rebirth.search.client.ObjectAnnonFactory.Source;
 import cn.com.rebirth.search.client.group.LuceneGroup;
 import cn.com.rebirth.search.client.group.LuceneGroupField;
@@ -69,6 +74,7 @@ import cn.com.rebirth.search.core.search.facet.Facets;
 import cn.com.rebirth.search.core.search.facet.terms.TermsFacet;
 import cn.com.rebirth.search.core.search.facet.terms.TermsFacet.Entry;
 import cn.com.rebirth.search.core.search.highlight.HighlightBuilder;
+import cn.com.rebirth.search.core.search.highlight.HighlightField;
 import cn.com.rebirth.search.core.search.sort.SortBuilders;
 import cn.com.rebirth.search.core.search.sort.SortOrder;
 
@@ -548,7 +554,9 @@ public abstract class AbstractNodeTemplate implements NodeOperations, BaseNodeOp
 		List<T> rest = Lists.newArrayList();
 		SearchHits searchHits = searchResponse.getHits();
 		for (SearchHit searchHit : searchHits) {
-			T t = ObjectAnnonFactory.invoke(searchHit.id(), searchHit.getSource(),
+			Map<String, HighlightField> hiMap = searchHit.highlightFields();
+			Map<String, Object> map = searchHit.getSource();
+			T t = ObjectAnnonFactory.invoke(searchHit.id(), higthMap(map, hiMap),
 					ObjectAnnonFactory.annotationInfo(entityClass));
 			rest.add(t);
 		}
@@ -586,6 +594,28 @@ public abstract class AbstractNodeTemplate implements NodeOperations, BaseNodeOp
 				((FacetPage<T>) page).setGroups(map);
 		}
 		return page;
+	}
+
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> higthMap(final Map<String, Object> map, final Map<String, HighlightField> hiMap) {
+		if (hiMap == null || hiMap.isEmpty())
+			return map;
+		return CglibProxyUtils.getProxyInstance(map.getClass(), new MethodInterceptor() {
+
+			@Override
+			public Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy) throws Throwable {
+				String methodName = method.getName();
+				if ("get".equals(methodName)) {
+					String key = (String) args[0];
+					HighlightField highlightField = hiMap.get(key);
+					if (highlightField != null && highlightField.getFragments() != null
+							&& highlightField.getFragments().length > 0) {
+						return highlightField.getFragments()[0];
+					}
+				}
+				return method.invoke(map, args);
+			}
+		});
 	}
 
 	/* (non-Javadoc)

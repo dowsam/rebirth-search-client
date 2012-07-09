@@ -104,7 +104,7 @@ public class HighlightSearchPageRequest extends SearchPageRequest {
 	 *
 	 * @author l.xue.nong
 	 */
-	class HighligthSearchField {
+	public static class HighligthSearchField {
 
 		/** The name. */
 		private String name;
