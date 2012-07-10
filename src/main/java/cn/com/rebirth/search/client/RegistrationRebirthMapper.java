@@ -6,12 +6,12 @@ package cn.com.rebirth.search.client;
 
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import cn.com.rebirth.commons.search.SearchConstants;
 import cn.com.rebirth.commons.search.annotation.AnnotationInfo;
 import cn.com.rebirth.commons.search.annotation.AnnotationManager;
 import cn.com.rebirth.commons.search.annotation.Index;
@@ -98,7 +98,7 @@ public class RegistrationRebirthMapper implements InitializingBean {
 		}
 		AnnotationManager annotationManager = AnnotationManager.getInstance();
 		ResolverUtils<Index> resolverUtils = new ResolverUtils<Index>();
-		resolverUtils.findAnnotated(Index.class, SearchConstants.PACKAGE_NAME_FIX);
+		resolverUtils.findAnnotated(Index.class, StringUtils.EMPTY);
 		Set<Class<? extends Index>> classes = resolverUtils.getClasses();
 		for (Class<? extends Index> class1 : classes) {
 			AnnotationInfo annotationInfo = annotationManager.getAnnotationInfo(class1);
