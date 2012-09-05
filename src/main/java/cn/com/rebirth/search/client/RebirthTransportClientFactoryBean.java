@@ -14,9 +14,9 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 
+import cn.com.rebirth.commons.settings.ImmutableSettings;
 import cn.com.rebirth.commons.settings.Settings;
 import cn.com.rebirth.commons.utils.ExceptionUtils;
-import cn.com.rebirth.search.commons.settings.ImmutableSettings;
 import cn.com.rebirth.search.commons.transport.InetSocketTransportAddress;
 import cn.com.rebirth.search.commons.transport.TransportAddress;
 import cn.com.rebirth.search.core.client.Client;
@@ -101,6 +101,8 @@ public class RebirthTransportClientFactoryBean implements FactoryBean<TransportC
 	private void internalCreateTransportClient() {
 		Settings settings = ImmutableSettings.settingsBuilder().loadFromClasspath("rebirth-search-client.properties")
 				.build();
+		String nodeName = settings.get("name");
+		settings = ImmutableSettings.settingsBuilder().put(settings).put("name", nodeName).build();
 		this.transportClient = new TransportClient(settings);
 		if (null != transportAddresses) {
 			for (final Entry<String, Integer> address : transportAddresses.entrySet()) {

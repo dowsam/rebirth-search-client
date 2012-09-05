@@ -6,6 +6,7 @@ package cn.com.rebirth.search.client;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.util.Date;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -19,15 +20,15 @@ import cn.com.rebirth.commons.search.annotation.FieldAnalyzer;
 import cn.com.rebirth.commons.search.annotation.FieldBoost;
 import cn.com.rebirth.commons.search.annotation.Index;
 import cn.com.rebirth.commons.search.annotation.PKey;
+import cn.com.rebirth.commons.settings.ImmutableSettings;
 import cn.com.rebirth.commons.utils.ConvertUtils;
 import cn.com.rebirth.commons.utils.ExceptionUtils;
+import cn.com.rebirth.commons.xcontent.XContentBuilder;
+import cn.com.rebirth.commons.xcontent.XContentFactory;
+import cn.com.rebirth.core.inject.Injector;
+import cn.com.rebirth.core.inject.ModulesBuilder;
+import cn.com.rebirth.core.settings.SettingsModule;
 import cn.com.rebirth.search.client.data.DataProcessingFactory;
-import cn.com.rebirth.search.commons.inject.Injector;
-import cn.com.rebirth.search.commons.inject.ModulesBuilder;
-import cn.com.rebirth.search.commons.settings.ImmutableSettings;
-import cn.com.rebirth.search.commons.settings.SettingsModule;
-import cn.com.rebirth.search.commons.xcontent.XContentBuilder;
-import cn.com.rebirth.search.commons.xcontent.XContentFactory;
 import cn.com.rebirth.search.core.env.Environment;
 import cn.com.rebirth.search.core.env.EnvironmentModule;
 import cn.com.rebirth.search.core.index.IndexNameModule;
@@ -174,6 +175,9 @@ public abstract class ObjectAnnonFactory {
 				if (value == null)
 					continue;
 				Class<?> type = property.getRawClass();
+				if (java.util.Date.class.isAssignableFrom(type)) {
+					value = ConvertUtils.convertObjectToObject(value, Long.class);
+				}
 				value = ConvertUtils.convertObjectToObject(value, type);
 				property.setProperty(t, value);
 			}
@@ -269,6 +273,11 @@ public abstract class ObjectAnnonFactory {
 			for (Map.Entry<String, AbstractSearchProperty> entry : properties.entrySet()) {
 				AbstractSearchProperty property = entry.getValue();
 				Object value = property.getProperty(object);
+				if (value != null && value instanceof Date) {
+					//date to long
+					Date date = (Date) value;
+					value = date.getTime();
+				}
 				if (value != null && StringUtils.isNotBlank(value.toString())) {
 					if (property.isFieldIndex() || property.isFieldStore()) {
 						String name = property.getFieldIndex().name();
@@ -384,6 +393,9 @@ public abstract class ObjectAnnonFactory {
 		//				new cn.com.rebirth.search.core.index.Index(source.index.indexName()), newAnalysisService(source.index));
 		//		DocumentMapper documentMapper = documentMapperParser.parse(source.mapperBuilder.string());
 		//		System.out.println(documentMapper.toString());
+		//		Date date = DateUtils.getCurrentDateTime();
+		//		String str = ConvertUtils.convertObjectToObject(date, String.class);
+		//		System.out.println(str);
 	}
 
 	public static AnalysisService newAnalysisService(Index index) {

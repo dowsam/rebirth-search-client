@@ -17,7 +17,7 @@ import cn.com.rebirth.commons.search.annotation.AnnotationManager;
 import cn.com.rebirth.commons.search.annotation.Index;
 import cn.com.rebirth.commons.utils.ResolverUtils;
 import cn.com.rebirth.commons.utils.TemplateMatcher;
-import cn.com.rebirth.search.commons.xcontent.XContentBuilder;
+import cn.com.rebirth.commons.xcontent.XContentBuilder;
 import cn.com.rebirth.search.core.client.Client;
 import cn.com.rebirth.search.core.node.Node;
 

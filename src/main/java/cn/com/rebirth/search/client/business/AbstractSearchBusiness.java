@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2005-2012 www.china-cti.com All rights reserved
- * Info:rebirth-search-client AbstractSearchBusiness.java 2012-7-6 16:50:26 l.xue.nong$$
+ * Info:rebirth-search-client AbstractSearchBusiness.java 2012-7-30 9:43:09 l.xue.nong$$
  */
 package cn.com.rebirth.search.client.business;
 
@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import cn.com.rebirth.commons.Page;
 import cn.com.rebirth.commons.PageRequest;
 import cn.com.rebirth.commons.StopWatch;
+import cn.com.rebirth.commons.search.SearchPage;
 import cn.com.rebirth.commons.search.SearchPageRequest;
 import cn.com.rebirth.commons.utils.ReflectionUtils;
 import cn.com.rebirth.search.client.FacetPage;
@@ -279,6 +280,13 @@ public abstract class AbstractSearchBusiness<E, F> implements BaseBusiness<E>, S
 		if (page.getTotalItems() > 0) {
 			List<F> fs = page.getResult();
 			Page<E> page2 = new Page<E>(pageRequest);
+			if (page instanceof FacetPage && pageRequest instanceof FacetPageRequest) {
+				page2 = new FacetPage<E>((FacetPageRequest) pageRequest);
+				((FacetPage<E>) page2).setGroups(((FacetPage<F>) page).getGroups());
+			} else if (page instanceof SearchPage && pageRequest instanceof SearchPageRequest) {
+				page2 = new SearchPage<E>((SearchPageRequest) pageRequest);
+				((SearchPage<E>) page2).setDebugMsg(((SearchPage<F>) page).getDebugMsg());
+			}
 			List<E> es = Lists.newArrayList();
 			for (F f : fs) {
 				if (entityClass.isAssignableFrom(f.getClass())) {
@@ -408,4 +416,50 @@ public abstract class AbstractSearchBusiness<E, F> implements BaseBusiness<E>, S
 	protected void beforeFlush() {
 
 	}
+
+	/* (non-Javadoc)
+	 * @see cn.com.rebirth.search.client.business.SearchBusiness#count()
+	 */
+	@Override
+	public Long count() {
+		return count(null);
+	}
+
+	/* (non-Javadoc)
+	 * @see cn.com.rebirth.search.client.business.SearchBusiness#count(java.lang.String)
+	 */
+	@Override
+	public Long count(String queryString) {
+		StopWatch stopWatch = new StopWatch();
+		stopWatch.start();
+		queryString = beforeCount(queryString);
+		Long count = indexToolboxFactory.count(entityClass, queryString);
+		count = afterCount(queryString, count);
+		stopWatch.stop();
+		logger.info("HostName:[" + this.hostName + "],TheardName:[" + Thread.currentThread().getName()
+				+ "],Action Class Name:[{}],Method Name:[flush],Time-consuming:[{}]", getClass(), stopWatch.totalTime());
+		return count;
+	}
+
+	/**
+	 * After count.
+	 *
+	 * @param queryString the query string
+	 * @param count the count
+	 * @return the long
+	 */
+	protected Long afterCount(String queryString, Long count) {
+		return count;
+	}
+
+	/**
+	 * Before count.
+	 *
+	 * @param queryString the query string
+	 * @return the string
+	 */
+	protected String beforeCount(String queryString) {
+		return queryString;
+	}
+
 }

@@ -526,12 +526,24 @@ public class QueryParser {
 					if ('\'' == e3.type) {
 						i += 2;
 						if ('=' == e2.type) {
-							this.querys.push(QueryBuilders.termQuery(e.toString(), e3.toString()));
+							if (e3.toString().endsWith("**")) {
+								this.querys.push(QueryBuilders.prefixQuery(e.toString(),
+										e3.toString().substring(0, e3.toString().length() - 2)));
+							} else if (e3.toString().contains("*") || e3.toString().contains("?")) {
+								this.querys.push(QueryBuilders.wildcardQuery(e.toString(), e3.toString()));
+							} else {
+								this.querys.push(QueryBuilders.termQuery(e.toString(), e3.toString()));
+							}
 						} else if (':' == e2.type) {
 							String keyword = e3.toString();
 							if (keyword.startsWith("^") && keyword.endsWith("$")) {
 								QueryStringQueryBuilder pQuery = this.luceneQueryParse(e.toString(), keyword);
 								this.querys.push(pQuery);
+							} else if (keyword.endsWith("**")) {
+								this.querys.push(QueryBuilders.prefixQuery(e.toString(),
+										keyword.substring(0, keyword.length() - 2)));
+							} else if (keyword.contains("*") || keyword.contains("?")) {
+								this.querys.push(QueryBuilders.wildcardQuery(e.toString(), keyword));
 							} else {
 								//								List<BaseQueryBuilder> builders = Lists.newArrayList();
 								//								SumMallAnalyzers analyzers = SumMallAnalyzersFactory.getSumMallAnalyzers();
@@ -737,8 +749,8 @@ public class QueryParser {
 				throw new IllegalStateException("表达式异常, RangeQuery格式错误");
 			}
 			RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(fieldNameEle.toString());
-			rangeQueryBuilder.from(Integer.valueOf(firstValue)).to(Integer.valueOf(lastValue))
-					.includeLower(includeFirst).includeUpper(includeLast);
+			rangeQueryBuilder.from(Long.valueOf(firstValue)).to(Long.valueOf(lastValue)).includeLower(includeFirst)
+					.includeUpper(includeLast);
 			return rangeQueryBuilder;
 		}
 
@@ -826,5 +838,12 @@ public class QueryParser {
 			}
 
 		}
+	}
+
+	public static void main(String[] args) {
+		String a = "a*a*aa*";
+		System.out.println(a.contains("*"));
+		a = "aaaa?";
+		System.out.println(a.contains("?"));
 	}
 }

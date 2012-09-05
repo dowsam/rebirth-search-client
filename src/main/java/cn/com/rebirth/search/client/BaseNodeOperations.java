@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2005-2012 www.summall.com.cn All rights reserved
- * Info:summall-search-client BaseNodeOperations.java 2012-3-31 18:09:24 l.xue.nong$$
+ * Copyright (c) 2005-2012 www.china-cti.com All rights reserved
+ * Info:rebirth-search-client BaseNodeOperations.java 2012-7-30 9:13:04 l.xue.nong$$
  */
 package cn.com.rebirth.search.client;
 

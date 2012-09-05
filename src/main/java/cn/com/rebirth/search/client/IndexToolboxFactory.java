@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2005-2012 www.summall.com.cn All rights reserved
- * Info:summall-search-client IndexToolboxFactory.java 2012-5-4 10:37:24 l.xue.nong$$
+ * Copyright (c) 2005-2012 www.china-cti.com All rights reserved
+ * Info:rebirth-search-client IndexToolboxFactory.java 2012-7-30 9:27:02 l.xue.nong$$
  */
 package cn.com.rebirth.search.client;
 
@@ -154,5 +154,22 @@ public class IndexToolboxFactory implements BaseNodeOperations, IndexSearchEngin
 	public <T extends ActionResponse> T execute(ClientCallback<T> callback) {
 		Validate.notNull(callback);
 		return RegistrationRebirthMapper.getInstance().template().executeGet(callback);
+	}
+
+	/* (non-Javadoc)
+	 * @see cn.com.rebirth.search.client.IndexSearchEngine#count(java.lang.Class)
+	 */
+	@Override
+	public <T> Long count(Class<T> entityClass) {
+		return count(entityClass, null);
+	}
+
+	/* (non-Javadoc)
+	 * @see cn.com.rebirth.search.client.IndexSearchEngine#count(java.lang.Class, java.lang.String)
+	 */
+	@Override
+	public <T> Long count(Class<T> entityClass, String queryString) {
+		Validate.notNull(entityClass);
+		return RegistrationRebirthMapper.getInstance().template().count(entityClass, queryString);
 	}
 }

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2005-2012 www.summall.com.cn All rights reserved
- * Info:summall-search-client AbstractNodeTemplate.java 2012-5-4 10:35:59 l.xue.nong$$
+ * Copyright (c) 2005-2012 www.china-cti.com All rights reserved
+ * Info:rebirth-search-client AbstractNodeTemplate.java 2012-7-30 9:25:19 l.xue.nong$$
  */
 package cn.com.rebirth.search.client;
 
@@ -12,6 +12,7 @@ import java.util.Map;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.lucene.search.Similarity;
 
@@ -20,14 +21,16 @@ import cn.com.rebirth.commons.PageRequest.Order;
 import cn.com.rebirth.commons.PageRequest.Sort;
 import cn.com.rebirth.commons.search.SearchPage;
 import cn.com.rebirth.commons.search.SearchPageRequest;
+import cn.com.rebirth.commons.search.SearchPageRequest.SearchOrder;
+import cn.com.rebirth.commons.search.SortType;
 import cn.com.rebirth.commons.search.annotation.AnnotationInfo;
 import cn.com.rebirth.commons.search.annotation.AnnotationManager;
 import cn.com.rebirth.commons.search.annotation.Index;
 import cn.com.rebirth.commons.utils.CglibProxyUtils;
+import cn.com.rebirth.commons.xcontent.XContentBuilder;
 import cn.com.rebirth.search.client.ObjectAnnonFactory.Source;
 import cn.com.rebirth.search.client.group.LuceneGroup;
 import cn.com.rebirth.search.client.group.LuceneGroupField;
-import cn.com.rebirth.search.commons.xcontent.XContentBuilder;
 import cn.com.rebirth.search.core.action.ActionFuture;
 import cn.com.rebirth.search.core.action.ActionResponse;
 import cn.com.rebirth.search.core.action.admin.cluster.health.ClusterHealthResponse;
@@ -45,6 +48,8 @@ import cn.com.rebirth.search.core.action.admin.indices.refresh.RefreshResponse;
 import cn.com.rebirth.search.core.action.admin.indices.status.IndicesStatusResponse;
 import cn.com.rebirth.search.core.action.bulk.BulkRequest;
 import cn.com.rebirth.search.core.action.bulk.BulkResponse;
+import cn.com.rebirth.search.core.action.count.CountRequest;
+import cn.com.rebirth.search.core.action.count.CountResponse;
 import cn.com.rebirth.search.core.action.delete.DeleteRequest;
 import cn.com.rebirth.search.core.action.delete.DeleteResponse;
 import cn.com.rebirth.search.core.action.get.GetRequest;
@@ -490,7 +495,7 @@ public abstract class AbstractNodeTemplate implements NodeOperations, BaseNodeOp
 	 * @param queryBuilder the query builder
 	 * @param pageRequest the page request
 	 * @param entityClass the entity class
-	 * @return the page
+	 * @return the search page
 	 */
 	protected <T> SearchPage<T> search(final QueryBuilder queryBuilder, final SearchPageRequest pageRequest,
 			final Class<T> entityClass) {
@@ -511,7 +516,15 @@ public abstract class AbstractNodeTemplate implements NodeOperations, BaseNodeOp
 				Sort sort = pageRequest.getSort();
 				if (sort != null && !sort.getOrders().isEmpty()) {
 					for (Order order : sort) {
-						sourceBuilder.sort(order.getProperty(), toSortOrder(order.getDirection()));
+						if (order instanceof SearchOrder) {
+							SearchOrder searchOrder = (SearchOrder) order;
+							SortType sortType = searchOrder.getSortType();
+							if (SortType.SCORE.equals(sortType) || StringUtils.isBlank(order.getProperty())) {
+								sourceBuilder.sort(SortBuilders.scoreSort());
+							} else {
+								sourceBuilder.sort(order.getProperty(), toSortOrder(order.getDirection()));
+							}
+						}
 					}
 				} else {
 					sourceBuilder.sort(SortBuilders.scoreSort());
@@ -596,6 +609,13 @@ public abstract class AbstractNodeTemplate implements NodeOperations, BaseNodeOp
 		return page;
 	}
 
+	/**
+	 * Higth map.
+	 *
+	 * @param map the map
+	 * @param hiMap the hi map
+	 * @return the map
+	 */
 	@SuppressWarnings("unchecked")
 	private Map<String, Object> higthMap(final Map<String, Object> map, final Map<String, HighlightField> hiMap) {
 		if (hiMap == null || hiMap.isEmpty())
@@ -703,4 +723,32 @@ public abstract class AbstractNodeTemplate implements NodeOperations, BaseNodeOp
 		return groups;
 	}
 
+	/* (non-Javadoc)
+	 * @see cn.com.rebirth.search.client.IndexSearchEngine#count(java.lang.Class)
+	 */
+	@Override
+	public <T> Long count(Class<T> entityClass) {
+		return count(entityClass, null);
+	}
+
+	/* (non-Javadoc)
+	 * @see cn.com.rebirth.search.client.IndexSearchEngine#count(java.lang.Class, java.lang.String)
+	 */
+	@Override
+	public <T> Long count(final Class<T> entityClass, final String queryString) {
+		CountResponse countResponse = executeGet(new ClientCallback<CountResponse>() {
+
+			@Override
+			public ActionFuture<CountResponse> execute(Client client) {
+				CountRequest countRequest = Requests.countRequest(toIndex(entityClass).indexName()).types(
+						toIndex(entityClass).indexType());
+				if (queryString != null) {
+					QueryBuilder queryBuilder = QueryParser.parse(queryString);
+					countRequest.query(queryBuilder);
+				}
+				return client.count(countRequest);
+			}
+		});
+		return countResponse.count();
+	}
 }

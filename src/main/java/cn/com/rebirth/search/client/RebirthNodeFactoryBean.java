@@ -14,6 +14,7 @@ import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.Resource;
 
+import cn.com.rebirth.commons.utils.NonceUtils;
 import cn.com.rebirth.search.core.node.Node;
 import cn.com.rebirth.search.core.node.NodeBuilder;
 
@@ -85,7 +86,8 @@ public class RebirthNodeFactoryBean implements FactoryBean<Node>, InitializingBe
 		if (null != settings) {
 			nodeBuilder.getSettings().put(settings);
 		}
-
+		String nodeName = nodeBuilder.getSettings().get("name");
+		nodeBuilder.getSettings().put("name", nodeName + "-" + NonceUtils.randomInt());
 		node = nodeBuilder.node();
 	}
 
